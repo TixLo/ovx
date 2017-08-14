@@ -119,6 +119,10 @@ typedef enum _vx_reftype_e {
  */
 #define VX_INT_MAX_NUM_IMAGE_FORMAT (2)
 
+/*! \brief Maximum number of references in the context
+ */
+#define VX_INT_MAX_REF              (128)
+
 /*! A parameter checker for size
  * \ingroup group_int_macros
  */
@@ -231,23 +235,23 @@ typedef vx_kernel (*vx_target_addkernel_f)(vx_target target,
  */
 struct _vx_target_funcs_t {
     /*! \brief Target name */
-    vx_char name[VX_MAX_REFERENCE_NAME];
+    vx_char                 name[VX_MAX_REFERENCE_NAME];
     /*! \brief Target author */
-    vx_char author[VX_MAX_REFERENCE_NAME];
+    vx_char                 author[VX_MAX_REFERENCE_NAME];
     /*! \brief Target description */
-    vx_char description[VX_MAX_REFERENCE_NAME];
+    vx_char                 description[VX_MAX_REFERENCE_NAME];
     /*! \brief Target initialization function */
-    vx_target_init_f     init;
+    vx_target_init_f        init;
     /*! \brief Target deinitialization function */
-    vx_target_deinit_f   deinit;
+    vx_target_deinit_f      deinit;
     /*! \brief Target query function */
-    vx_target_supports_f supports;
+    vx_target_supports_f    supports;
     /*! \brief Target processing function */
-    vx_target_process_f  process;
+    vx_target_process_f     process;
     /*! \brief Target verification function */
-    vx_target_verify_f   verify;
+    vx_target_verify_f      verify;
     /*! \brief Target function to add a kernel */
-    vx_target_addkernel_f addkernel;
+    vx_target_addkernel_f   addkernel;
 };
 
 /*
@@ -258,27 +262,20 @@ typedef void (*vx_destructor_f)(vx_reference ref);
  * definition of destructor 
  */
 typedef struct _vx_destructor_t {
-    vx_enum type;
-    vx_destructor_f destructor;
+    vx_enum                 type;
+    vx_destructor_f         destructor;
 }vx_destructor_t;
-
-/*
- * The internal representation of a image.
- */
-struct _vx_image {
-    int dummy;
-};
 
 /*
  * The internal representation of a image format description
  */
 struct _vx_image_fmt_desp {
     /*! \brief The image format */
-    vx_df_image format;
+    vx_df_image             format;
     /*! \brief The detail information of image format */
-    vx_size components;
-    vx_size planes;
-    vx_size pixel_size_in_bits;
+    vx_size                 components;
+    vx_size                 planes;
+    vx_size                 pixel_size_in_bits;
 };
 
 /*! \brief The most basic type in the OpenVX system. Any type that inherits
@@ -288,34 +285,34 @@ struct _vx_image_fmt_desp {
  */
 struct _vx_reference {
     /*! \brief Platform for ICD compatibility. */
-    struct _vx_platform *platform;
+    struct _vx_platform     *platform;
     /*! \brief used to validate references, must be set to VX_MAGIC */
-    vx_uint32 magic;
+    vx_uint32               magic;
     /*! \brief Set to an enum value in \ref vx_type_e. */
-    vx_enum type;
+    vx_enum                 type;
     /*! \brief Pointer to the top level context.
      * If this reference is the context, this will be NULL.
      */
-    vx_context context;
+    vx_context              context;
     /*! \brief The pointer to the object's scope parent. When virtual objects
      * are scoped within a graph, this will point to that parent graph. This is
      * left generic to allow future scoping variations. By default scope should
      * be the same as context.
      */
-    vx_reference scope;
+    vx_reference            scope;
     /*! \brief The count of the number of users with this reference. When
      * greater than 0, this can not be freed. When zero, the value can be
      * considered inaccessible.
      */
-    vx_uint32 external_count;
+    vx_uint32               external_count;
     /*! \brief The count of the number of framework references. When
      * greater than 0, this can not be freed.
      */
-    vx_uint32 internal_count;
+    vx_uint32               internal_count;
     /*! \brief The reference lock which is used to protect access to "in-fly" data. */
-    vx_sem_t lock;
+    vx_sem_t                lock;
     /*! \brief The reference name */
-    vx_char name[VX_MAX_REFERENCE_NAME];
+    vx_char                 name[VX_MAX_REFERENCE_NAME];
 };
 
 /*
@@ -323,13 +320,13 @@ struct _vx_reference {
  */
 struct _vx_kernel {
     /*! \brief The base of reference object*/
-    vx_reference_t ref;
+    vx_reference_t          ref;
     /*! \brief The kernel name */
-    vx_char name[VX_MAX_REFERENCE_NAME];
+    vx_char                 name[VX_MAX_REFERENCE_NAME];
     /*! \brief The kernel id */
-    vx_enum enumeration;  
+    vx_enum                 enumeration;  
     /*! \brief The Kernek execution function */
-    vx_kernel_f func;
+    vx_kernel_f             func;
 };
 
 /*
@@ -337,11 +334,11 @@ struct _vx_kernel {
  */
 struct _vx_node {
     /*! \brief The base of reference object*/
-    vx_reference_t ref;
+    vx_reference_t          ref;
     /*! \brief the pointer of kernel */
-    vx_kernel kernel; 
+    vx_kernel               kernel; 
     /*! \brief the pointer of parent graph */
-    vx_graph graph;
+    vx_graph                graph;
 };
 
 /*
@@ -349,11 +346,19 @@ struct _vx_node {
  */
 struct _vx_graph {
     /*! \brief The base of reference object*/
-    vx_reference_t ref;
+    vx_reference_t          ref;
     /*! \brief the pointer of nodes list */
-    vx_node nodes[VX_MAX_NODES]; 
+    vx_node                 nodes[VX_MAX_NODES]; 
     /*! \brief the number of nodes in this graph */
-    vx_uint32 num_nodes;
+    vx_uint32               num_nodes;
+};
+
+/*
+ * The internal representation of a image.
+ */
+struct _vx_image {
+    /*! \brief The base of reference object*/
+    vx_reference_t          ref;
 };
 
 /*
@@ -361,11 +366,11 @@ struct _vx_graph {
  */
 struct _vx_target {
     /*! \brief The table of function pointer to each target */
-    vx_target_funcs_t funcs;
+    vx_target_funcs_t       funcs;
     /*! \brief The number of supported kernels on this target */
-    vx_uint32 num_kernels;
+    vx_uint32               num_kernels;
     /*! \brief The supported kernels on this target */
-    vx_kernel_t kernels[VX_MAX_KERNELS];
+    vx_kernel_t             kernels[VX_MAX_KERNELS];
 };
 
 /*
@@ -373,19 +378,23 @@ struct _vx_target {
  */
 struct _vx_context {
     /*! \brief The base of reference object*/
-    vx_reference_t ref;
+    vx_reference_t          ref;
     /*! \brief The list of implemented targets */
-    vx_target_t targets[VX_INT_MAX_NUM_TARGETS];
+    vx_target_t             targets[VX_INT_MAX_NUM_TARGETS];
     /*! \brief The list of allowed image formats*/
-    vx_image_fmt_desp_t image_formats[VX_INT_MAX_NUM_IMAGE_FORMAT];
+    vx_image_fmt_desp_t     image_formats[VX_INT_MAX_NUM_IMAGE_FORMAT];
     /*! \brief log callback for errors*/
-    vx_log_callback_f log_cb;
+    vx_log_callback_f       log_cb;
     /*! \brief the log toggle */
-    vx_bool log_enabled;
+    vx_bool                 log_enabled;
     /*! \brief if true, the log callback is reentrant and doesn't need to be locked */
-    vx_bool log_reentrant;
+    vx_bool                 log_reentrant;
     /*! \brief the log semaphore */
-    vx_sem_t log_lock;
+    vx_sem_t                log_lock;
+    /*! \brief The reference table which contains all object handls */
+    vx_reference            ref_table[VX_INT_MAX_REF];
+    /*! \brief The number of reference in ref_table */
+    vx_uint32               ref_num;
 };
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -395,6 +404,10 @@ struct _vx_context {
  * \param [in] context The context to validate.
  */
 vx_bool ownIsValidContext(vx_context context);
+
+/*! \brief Dump context object
+ */
+void ownPrintContext(vx_context context);
 
 //////////////////////////////////////////////////////////////////////////////////
 // The internal functions of vx_graph
@@ -447,6 +460,15 @@ vx_uint32 ownDecrementReference(vx_reference ref, vx_enum reftype);
  */
 vx_uint32 ownTotalReferenceCount(vx_reference ref);
 
+/*! \brief Used to create a reference.
+ * \param [in] context the system context
+ * \param [in] type object type
+ * \param [in] reftype reference type. external, internal, or both
+ * \param [in] scope
+ * \ingroup group_int_reference
+ */
+vx_reference ownCreateRef(vx_context context, vx_enum type, vx_enum reftype, vx_reference scope);
+
 //////////////////////////////////////////////////////////////////////////////////
 // The internal functions of vx_target
 //////////////////////////////////////////////////////////////////////////////////
@@ -465,5 +487,10 @@ vx_status ownLoadTarget(vx_context_t *context, vx_target_funcs_t *target_func);
  * \ingroup group_int_target
  */
 vx_status ownInitImageFormats(vx_context context);
+
+/*! \brief Used to validate vx_context object.
+ * \param [in] ref The image will be destroyed
+ */
+void ownDestructImage(vx_reference ref);
 
 #endif// __VX_INTERNAL_H__

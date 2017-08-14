@@ -27,7 +27,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 void ownDestructGraph(vx_reference ref)
 {
-    VX_PRINT(VX_DEBUG_INFO, "onDestructGraph");
+    VX_PRINT(VX_DEBUG_INFO, "ownDestructGraph");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -43,23 +43,13 @@ VX_API_ENTRY vx_graph VX_API_CALL vxCreateGraph(vx_context context)
         return NULL;
     }
 
-    ownSemWait(&((vx_reference)context)->lock);
-
-    graph = (vx_graph)VX_MEM_CALLOC(1, sizeof(vx_graph_t));
+    graph = (vx_graph)ownCreateRef(context, VX_TYPE_GRAPH, VX_EXTERNAL, &context->ref);
     if (!graph)
     {
-        VX_PRINT(VX_DEBUG_ERR, "out of memory");
-        ownSemPost(&((vx_reference)context)->lock);
+        VX_PRINT(VX_DEBUG_WRN, "failed to create vx_graph object");
         return NULL;
     }
 
-    //
-    // initialize variables of vx_graph
-    //
-    ownInitReference(&graph->ref, context, VX_TYPE_GRAPH, &context->ref);
-    ownIncrementReference(&graph->ref, VX_EXTERNAL);
-
-    ownSemPost(&((vx_reference)context)->lock);
     return graph;
 }
 

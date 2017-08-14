@@ -24,11 +24,85 @@
 
 #define VX_BAD_MAGIC    0x0BAD0BAD
 
+/* registry different size for each object type */
+typedef struct 
+{
+    vx_enum type;
+    vx_size size;
+}vx_type_size_t;
+
+static vx_type_size_t type_sizes[] = 
+{
+    {VX_TYPE_INVALID            ,0                      },
+    // scalars
+    {VX_TYPE_CHAR               ,sizeof(vx_char)        },
+    // structures
+    // data objects
+    {VX_TYPE_GRAPH              ,sizeof(vx_graph_t)     },
+    {VX_TYPE_IMAGE              ,sizeof(vx_image_t)     },
+};
+
+/* registry destructor pointer */
 static vx_destructor_t destructors[] = 
 {
     {VX_TYPE_CONTEXT        ,NULL},
     {VX_TYPE_GRAPH          ,&ownDestructGraph},
+    {VX_TYPE_IMAGE          ,&ownDestructImage},
 };
+
+////////////////////////////////////////////////////////////////////////////////
+// Static Functions
+////////////////////////////////////////////////////////////////////////////////
+static vx_size ownSizeOfType(vx_enum type)
+{
+    vx_uint32 i=0;
+    vx_size size = 0;
+    for (i=0 ; i<dimof(type_sizes) ; i++)
+    {
+        if (type == type_sizes[i].type)
+        {
+            size = type_sizes[i].size;
+            break;
+        }
+    }
+    return size;
+}
+
+static vx_bool ownAddRef2Tbl(vx_context context, vx_reference ref)
+{
+    vx_uint32 i=0;
+    ownSemWait(&context->ref.lock);
+    for (i=0 ; i<VX_INT_MAX_REF ; i++)
+    {
+        if (context->ref_table[i] == NULL)
+        {
+            context->ref_table[i] = ref;
+            context->ref_num++;
+            ownSemPost(&context->ref.lock);
+            return vx_true_e;
+        }
+    }
+    ownSemPost(&context->ref.lock);
+    return vx_false_e;
+}
+
+static vx_bool ownRemoveRefFromTbl(vx_context context, vx_reference ref)
+{
+    vx_uint32 i=0;
+    ownSemWait(&context->ref.lock);
+    for (i=0 ; i<VX_INT_MAX_REF ; i++)
+    {
+        if (context->ref_table[i] == ref)
+        {
+            context->ref_table[i] = NULL;
+            context->ref_num--;
+            ownSemPost(&context->ref.lock);
+            return vx_true_e;
+        }
+    }
+    ownSemPost(&context->ref.lock);
+    return vx_false_e;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Internal Functions
@@ -66,6 +140,9 @@ vx_status ownReleaseReferenceInt(vx_reference *ref_ptr, vx_enum reftype)
 
     if (ownDecrementReference(ref, reftype) > 0)
         return status;
+
+    if (ownRemoveRefFromTbl(ref->context, ref) == vx_false_e)
+        return VX_ERROR_INVALID_REFERENCE;
 
     //
     // find its own destructor
@@ -108,6 +185,28 @@ vx_bool ownIsValidReference(vx_reference ref)
     }
 
     return valid;
+}
+
+vx_reference ownCreateRef(vx_context context, vx_enum type, vx_enum reftype, vx_reference scope)
+{
+    vx_size size = ownSizeOfType(type);
+    vx_reference ref = (vx_reference)VX_MEM_CALLOC(size, sizeof(vx_uint8)); 
+    if (!ref)
+    {
+        VX_PRINT(VX_DEBUG_ERR, "Out of memory!");
+        return NULL;
+    }
+
+    ownInitReference(ref, context, type, scope);
+    ownIncrementReference(ref, reftype);
+    if (ownAddRef2Tbl(context, ref) == vx_false_e)
+    {
+        VX_MEM_FREE((void*)ref);
+        VX_PRINT(VX_DEBUG_ERR, "ref_table is full");
+        return NULL;
+    }
+
+    return ref;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

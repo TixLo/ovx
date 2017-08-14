@@ -32,6 +32,19 @@ static vx_image_fmt_desp_t all_image_formats[VX_INT_MAX_NUM_IMAGE_FORMAT] =
     {VX_DF_IMAGE_GRAY ,1 ,1 ,8  },
 };
 
+static vx_bool ownIsSupportedFourcc(vx_context context, vx_df_image fourcc)
+{
+    int i=0;
+    for (i=0 ; i<VX_INT_MAX_NUM_IMAGE_FORMAT ; i++)
+    {
+        if (context->image_formats[i].format == fourcc)
+            return vx_true_e;
+    }
+
+    VX_PRINT(VX_DEBUG_ERR, "format 0x%08x is not supported", fourcc);
+    return vx_false_e;
+}
+
 /////////////////////////////////////////////////////////////////////////
 // vx_internal.h
 /////////////////////////////////////////////////////////////////////////
@@ -42,12 +55,38 @@ vx_status ownInitImageFormats(vx_context context)
     return status;
 }
 
+void ownDestructImage(vx_reference ref)
+{
+    VX_PRINT(VX_DEBUG_INFO, "ownDestructImage");
+}
+
 /////////////////////////////////////////////////////////////////////////
 // VX/vx_api.h
 /////////////////////////////////////////////////////////////////////////
 VX_API_ENTRY vx_image VX_API_CALL vxCreateImage(vx_context context, vx_uint32 width, vx_uint32 height, vx_df_image color)
 {
-    return 0;
+    vx_image image = NULL;
+
+    if (!ownIsValidReference((vx_reference)context))
+    {
+        VX_PRINT(VX_DEBUG_WRN, "context is a null pointer");
+        return NULL;
+    }
+
+    if (width == 0 || height == 0 || ownIsSupportedFourcc(context, color) == vx_false_e)
+    {
+        VX_PRINT(VX_DEBUG_WRN, "parameter is incorrect");
+        return NULL;
+    }
+
+    image = (vx_image)ownCreateRef(context, VX_TYPE_IMAGE, VX_EXTERNAL, &context->ref);
+    if (!image)
+    {
+        VX_PRINT(VX_DEBUG_WRN, "failed to create vx_image object");
+        return NULL;
+    }
+
+    return image;
 }
 
 VX_API_ENTRY vx_image VX_API_CALL vxCreateImageFromROI(vx_image img, const vx_rectangle_t *rect)
@@ -87,7 +126,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetImageAttribute(vx_image image, vx_enum a
 
 VX_API_ENTRY vx_status VX_API_CALL vxReleaseImage(vx_image *image)
 {
-    return 0;
+    return ownReleaseReferenceInt((vx_reference*)image, VX_EXTERNAL);
 }
 
 VX_API_ENTRY vx_size VX_API_CALL vxComputeImagePatchSize(vx_image image,

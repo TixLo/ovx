@@ -38,6 +38,31 @@ vx_bool ownIsValidContext(vx_context context)
     return vx_true_e;
 }
 
+void ownPrintContext(vx_context context)
+{
+    vx_uint32 i=0;
+
+    if (!ownIsValidReference((vx_reference)context))
+        return;
+
+    VX_PRINT(VX_DEBUG_INFO, "dump reference table (Total : %d)", context->ref_num);
+    for (i=0 ; i<context->ref_num ; i++)
+    {
+        switch (context->ref_table[i]->type)
+        {
+            case VX_TYPE_GRAPH: 
+                VX_PRINT(VX_DEBUG_INFO, "[%d] VX_TYOE_GRAPH", i);
+                break;
+            case VX_TYPE_IMAGE: 
+                VX_PRINT(VX_DEBUG_INFO, "[%d] VX_TYPE_IMAGE", i);
+                break;
+            default:
+                VX_PRINT(VX_DEBUG_WRN, "[%d] Unknown type", i);
+                break;
+        }
+    } 
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Public Functions
 ////////////////////////////////////////////////////////////////////////////////
