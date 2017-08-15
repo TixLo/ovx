@@ -53,6 +53,11 @@ void test_ut_image(void)
     assert_int_equal(1, test_vximage_create());
 }
 
+void test_ut_matrix(void)
+{
+    assert_int_equal(1, test_vxmatrix_create());
+}
+
 void test_ut_logging(void)
 {
     assert_int_equal(1, test_vxlogging_reg());
@@ -77,6 +82,7 @@ void all_tests(void)
     run_test(test_ut_reference); 
     run_test(test_ut_graph); 
     run_test(test_ut_image); 
+    run_test(test_ut_matrix); 
 //    run_test(test_ut_logging); 
 #if defined(HAVE_MEM_ANALYSIS)
     run_test(test_ut_check_memory_leakage);

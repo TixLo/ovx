@@ -77,6 +77,11 @@ enum vx_df_image_ext_e {
  */
 #define VX_MAX_KERNELS      (256)
 
+/*! \brief The maximum number of 2d planes an image may have.
+ * \ingroup group_int_image
+ */
+#define VX_PLANE_MAX         (4)
+
 #ifndef dimof
 /*! \brief Get the dimensionality of the array.
  * \details If not defined by the platform, this allows client to retrieve the
@@ -109,6 +114,20 @@ typedef enum _vx_reftype_e {
     VX_BOTH = 3,
 } vx_reftype_e;
 
+/*! \brief The dimensions enumeration, also stride enumerations.
+ * \ingroup group_int_image
+ */
+enum vx_dim_e {
+    /*! \brief Channels dimension, stride */
+    VX_DIM_C = 0,
+    /*! \brief Width (dimension) or x stride */
+    VX_DIM_X,
+    /*! \brief Height (dimension) or y stride */
+    VX_DIM_Y,
+    /*! \brief [hidden] The maximum number of dimensions */
+    VX_DIM_MAX,
+};
+
 /*! \brief Defines the number of targets in this implementation.
  * \ingroup group_int_target
  */
@@ -140,6 +159,8 @@ typedef struct _vx_target_funcs_t vx_target_funcs_t;
 typedef struct _vx_reference vx_reference_t;
 typedef struct _vx_kernel vx_kernel_t;
 typedef struct _vx_image vx_image_t;
+typedef struct _vx_matrix vx_matrix_t;
+typedef struct _vx_memory vx_memory_t;
 typedef struct _vx_image_fmt_desp vx_image_fmt_desp_t;
  
 /*
@@ -362,6 +383,44 @@ struct _vx_image {
 };
 
 /*
+ * The internal representation of a memory.
+ */
+struct _vx_memory {
+    /*! \brief The number of pointers in the array */
+    vx_uint32               nptrs;
+    /*! \brief The array of ROI offsets (one per plane for images) */
+    vx_uint32               offset[VX_PLANE_MAX];
+    /*! \brief The array of pointers (one per plane for images) */
+    vx_uint8*               ptrs[VX_PLANE_MAX];
+    /*! \brief The number of dimensions per ptr */
+    vx_int32                ndims;
+    /*! \brief The dimensional values per ptr */
+    vx_int32                dims[VX_PLANE_MAX][VX_DIM_MAX];
+    /*! \brief The per ptr stride values per dimension */
+    vx_int32                strides[VX_PLANE_MAX][VX_DIM_MAX];
+};
+
+/*
+ * The internal representation of a matrix.
+ */
+struct _vx_matrix {
+    /*! \brief The base of reference object */
+    vx_reference_t          ref;
+    /*! \brief reference from vx_type_e */
+    vx_enum                 data_type;
+    /*! \brief number of columns */
+    vx_size                 cols;
+    /*! \brief number of rows */
+    vx_size                 rows;
+    /*! \brief origin */
+    vx_coordinates2d_t      origin;
+    /*! \brief reference from vx_pattern_e */
+    vx_enum                 pattern;
+    /*! \brief memory layout */
+    vx_memory_t             memory;
+};
+
+/*
  * The internal representation of a target.
  */
 struct _vx_target {
@@ -492,5 +551,13 @@ vx_status ownInitImageFormats(vx_context context);
  * \param [in] ref The image will be destroyed
  */
 void ownDestructImage(vx_reference ref);
+
+//////////////////////////////////////////////////////////////////////////////////
+// The internal functions of vx_matrix
+//////////////////////////////////////////////////////////////////////////////////
+/*! \brief Used to validate vx_matrix object.
+ * \param [in] ref The image will be destroyed
+ */
+void ownDestructMatrix(vx_reference ref);
 
 #endif// __VX_INTERNAL_H__

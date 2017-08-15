@@ -40,6 +40,7 @@ static vx_type_size_t type_sizes[] =
     // data objects
     {VX_TYPE_GRAPH              ,sizeof(vx_graph_t)     },
     {VX_TYPE_IMAGE              ,sizeof(vx_image_t)     },
+    {VX_TYPE_MATRIX             ,sizeof(vx_matrix_t)    },
 };
 
 /* registry destructor pointer */
@@ -48,6 +49,7 @@ static vx_destructor_t destructors[] =
     {VX_TYPE_CONTEXT        ,NULL},
     {VX_TYPE_GRAPH          ,&ownDestructGraph},
     {VX_TYPE_IMAGE          ,&ownDestructImage},
+    {VX_TYPE_MATRIX         ,&ownDestructMatrix},
 };
 
 ////////////////////////////////////////////////////////////////////////////////

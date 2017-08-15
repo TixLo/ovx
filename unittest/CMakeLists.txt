@@ -3,6 +3,7 @@ SET(UT_SRCS seatest/seatest.c
             ut_context.c
             ut_graph.c
             ut_image.c
+            ut_matrix.c
             ut_logging.c
             ut_reference.c) 
 

@@ -56,6 +56,9 @@ void ownPrintContext(vx_context context)
             case VX_TYPE_IMAGE: 
                 VX_PRINT(VX_DEBUG_INFO, "[%d] VX_TYPE_IMAGE", i);
                 break;
+            case VX_TYPE_MATRIX: 
+                VX_PRINT(VX_DEBUG_INFO, "[%d] VX_TYPE_MATRIX", i);
+                break;
             default:
                 VX_PRINT(VX_DEBUG_WRN, "[%d] Unknown type", i);
                 break;
