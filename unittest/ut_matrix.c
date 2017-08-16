@@ -92,3 +92,160 @@ int test_vxmatrix_readwrite(void)
     vxReleaseContext(&context);
     return ret;
 }
+
+int test_vxmatrix_query(void)
+{
+    vx_size rows, cols, size;
+    vx_enum type, pattern;
+    vx_coordinates2d_t coord;
+    vx_status status = VX_SUCCESS;
+    vx_context context = vxCreateContext();
+    if (context == NULL)
+        return 0;
+
+    vx_matrix matrix = vxCreateMatrix(context, VX_TYPE_INT32, 2, 4);
+
+    if (!matrix)
+    {
+        vxReleaseContext(&context);
+        return 0;
+    }
+
+    // check type    
+    if (vxQueryMatrix(matrix, VX_MATRIX_TYPE, &type, sizeof(vx_enum)) != VX_SUCCESS)
+    {
+        vxReleaseMatrix(&matrix);
+        vxReleaseContext(&context);
+        return 0;
+    }
+    if (type != VX_TYPE_INT32)
+    {
+        vxReleaseMatrix(&matrix);
+        vxReleaseContext(&context);
+        return 0;
+    }
+
+    // check rows    
+    if (vxQueryMatrix(matrix, VX_MATRIX_ROWS, &rows, sizeof(vx_size)) != VX_SUCCESS)
+    {
+        vxReleaseMatrix(&matrix);
+        vxReleaseContext(&context);
+        return 0;
+    }
+    if (rows != 4)
+    {
+        vxReleaseMatrix(&matrix);
+        vxReleaseContext(&context);
+        return 0;
+    }
+
+    // check cols    
+    if (vxQueryMatrix(matrix, VX_MATRIX_COLUMNS, &cols, sizeof(vx_size)) != VX_SUCCESS)
+    {
+        vxReleaseMatrix(&matrix);
+        vxReleaseContext(&context);
+        return 0;
+    }
+    if (cols != 2)
+    {
+        vxReleaseMatrix(&matrix);
+        vxReleaseContext(&context);
+        return 0;
+    }
+
+    // check size    
+    if (vxQueryMatrix(matrix, VX_MATRIX_SIZE, &size, sizeof(vx_size)) != VX_SUCCESS)
+    {
+        vxReleaseMatrix(&matrix);
+        vxReleaseContext(&context);
+        return 0;
+    }
+    if (size != 4 * 2 * 4)
+    {
+        vxReleaseMatrix(&matrix);
+        vxReleaseContext(&context);
+        return 0;
+    }
+
+    // check origin    
+    if (vxQueryMatrix(matrix, VX_MATRIX_ORIGIN, &coord, sizeof(vx_coordinates2d_t)) != VX_SUCCESS)
+    {
+        vxReleaseMatrix(&matrix);
+        vxReleaseContext(&context);
+        return 0;
+    }
+    if (coord.x != 1 || coord.y != 2)
+    {
+        vxReleaseMatrix(&matrix);
+        vxReleaseContext(&context);
+        return 0;
+    }
+
+    // check pattern    
+    if (vxQueryMatrix(matrix, VX_MATRIX_PATTERN, &pattern, sizeof(vx_enum)) != VX_SUCCESS)
+    {
+        vxReleaseMatrix(&matrix);
+        vxReleaseContext(&context);
+        return 0;
+    }
+    if (pattern != VX_PATTERN_OTHER)
+    {
+        vxReleaseMatrix(&matrix);
+        vxReleaseContext(&context);
+        return 0;
+    }
+
+    vxReleaseMatrix(&matrix);
+    vxReleaseContext(&context);
+    return 1;
+}
+
+int test_vxmatrix_copy(void)
+{
+    int i=0, j=0, ret=1;
+    vx_int32 buf[2][4] = {{1, 2, 3, 4}, {5, 6, 7, 8}};
+    vx_int32 out[2][4];
+    vx_status status = VX_SUCCESS;
+    vx_context context = vxCreateContext();
+    if (context == NULL)
+        return 0;
+
+    vx_matrix matrix = vxCreateMatrix(context, VX_TYPE_INT32, 2, 4);
+
+    if (!matrix)
+    {
+        vxReleaseContext(&context);
+        return 0;
+    }
+    
+    if (vxCopyMatrix(matrix, (void*)buf, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST) != VX_SUCCESS)
+    {
+        vxReleaseMatrix(&matrix);
+        vxReleaseContext(&context);
+        return 0;
+    }
+
+    if (vxCopyMatrix(matrix, (void*)out, VX_READ_ONLY, VX_MEMORY_TYPE_HOST) != VX_SUCCESS)
+    {
+        vxReleaseMatrix(&matrix);
+        vxReleaseContext(&context);
+        return 0;
+    }
+
+    for (i=0 ; i<2 ; i++)
+    {
+        for (j=0 ; j<4 ; j++)
+        {
+            //VX_PRINT(VX_DEBUG_INFO, "[%d][%d], buf:%d, out:%d", i, j, buf[i][j], out[i][j]);
+            if (buf[i][j] != out[i][j])
+            {
+                ret = 0;
+                break;
+            }
+        }
+    }
+
+    vxReleaseMatrix(&matrix);
+    vxReleaseContext(&context);
+    return ret;
+}

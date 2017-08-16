@@ -119,13 +119,56 @@ VX_API_ENTRY vx_status VX_API_CALL vxReleaseMatrix(vx_matrix *matrix)
 
 VX_API_ENTRY vx_status VX_API_CALL vxQueryMatrix(vx_matrix matrix, vx_enum attribute, void *ptr, vx_size size)
 {
+    vx_status status = VX_SUCCESS;
     if (!ownIsValidReference((vx_reference)matrix))
     {
-        VX_PRINT(VX_DEBUG_WRN, "matrix is a null pointer");
         return VX_ERROR_INVALID_REFERENCE;
     }
 
-    return VX_SUCCESS;
+    switch(attribute)
+    {
+        case VX_MATRIX_TYPE:
+            if (VX_CHECK_SIZE_PARAM(size, vx_enum))
+                *(vx_enum *)ptr = matrix->data_type;
+            else
+                status = VX_ERROR_INVALID_PARAMETERS;
+            break;
+        case VX_MATRIX_ROWS:
+            if (VX_CHECK_SIZE_PARAM(size, vx_size))
+                *(vx_size *)ptr = matrix->rows;
+            else
+                status = VX_ERROR_INVALID_PARAMETERS;
+            break;
+        case VX_MATRIX_COLUMNS:
+            if (VX_CHECK_SIZE_PARAM(size, vx_size))
+                *(vx_size *)ptr = matrix->cols;
+            else
+                status = VX_ERROR_INVALID_PARAMETERS;
+            break;
+        case VX_MATRIX_SIZE:
+            if (VX_CHECK_SIZE_PARAM(size, vx_size))
+                *(vx_size *)ptr = matrix->cols * matrix->rows * matrix->type_size;
+            else
+                status = VX_ERROR_INVALID_PARAMETERS;
+            break;
+        case VX_MATRIX_ORIGIN:
+            if (VX_CHECK_SIZE_PARAM(size, vx_coordinates2d_t))
+                *(vx_coordinates2d_t *)ptr = matrix->origin;
+            else
+                status = VX_ERROR_INVALID_PARAMETERS;
+            break;
+        case VX_MATRIX_PATTERN:
+            if (VX_CHECK_SIZE_PARAM(size, vx_enum))
+                *(vx_enum *)ptr = matrix->pattern;
+            else
+                status = VX_ERROR_INVALID_PARAMETERS;
+            break;
+        default:
+            status = VX_ERROR_NOT_SUPPORTED;
+            break;
+    }
+    
+    return status;
 }
 
 VX_API_ENTRY vx_status VX_API_CALL vxCopyMatrix(vx_matrix matrix, void *user_ptr, vx_enum usage, vx_enum user_mem_type)
@@ -136,7 +179,18 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyMatrix(vx_matrix matrix, void *user_ptr
         return VX_ERROR_INVALID_REFERENCE;
     }
 
-    return VX_SUCCESS;
+    if (usage == VX_READ_ONLY)
+    {
+        return vxReadMatrix(matrix, user_ptr);
+    }
+    else if (usage == VX_WRITE_ONLY)
+    {
+        return vxWriteMatrix(matrix, user_ptr);
+    }
+    else
+    {
+        return VX_ERROR_INVALID_PARAMETERS;
+    }
 }
 
 VX_API_ENTRY vx_matrix VX_API_CALL vxCreateMatrixFromPattern(vx_context context, vx_enum pattern, vx_size columns, vx_size rows)
