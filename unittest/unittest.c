@@ -56,6 +56,7 @@ void test_ut_image(void)
 void test_ut_matrix(void)
 {
     assert_int_equal(1, test_vxmatrix_create());
+    assert_int_equal(1, test_vxmatrix_readwrite());
 }
 
 void test_ut_logging(void)

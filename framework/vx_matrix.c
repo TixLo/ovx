@@ -48,7 +48,12 @@ static vx_data_type_size_t type_sizes[] =
 /////////////////////////////////////////////////////////////////////////
 void ownDestructMatrix(vx_reference ref)
 {
+    vx_matrix matrix = (vx_matrix)ref;
     VX_PRINT(VX_DEBUG_INFO, "ownDestructMatrix");
+    if (!matrix)
+        return;
+ 
+    ownFreeMemory(&matrix->memory);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -82,6 +87,7 @@ VX_API_ENTRY vx_matrix VX_API_CALL vxCreateMatrix(vx_context context, vx_enum da
     }
 
     if (columns == 0 || rows == 0)
+
     {
         VX_PRINT(VX_DEBUG_WRN, "invalied dimensions to matrix");
         return NULL;
@@ -97,13 +103,11 @@ VX_API_ENTRY vx_matrix VX_API_CALL vxCreateMatrix(vx_context context, vx_enum da
     matrix->data_type = data_type;
     matrix->cols = columns;
     matrix->rows = rows;
+    matrix->type_size = size;
     matrix->origin.x = (vx_uint32)(columns / 2);
     matrix->origin.y = (vx_uint32)(rows / 2);
     matrix->pattern = VX_PATTERN_OTHER;
-    matrix->memory.ndims = 2;
-    matrix->memory.nptrs = 1;
-    matrix->memory.dims[0][0] = (vx_int32)size;
-    matrix->memory.dims[0][1] = (vx_int32)(columns*rows);
+    matrix->memory.size = size * rows * columns;
 
     return matrix;
 }
@@ -113,14 +117,26 @@ VX_API_ENTRY vx_status VX_API_CALL vxReleaseMatrix(vx_matrix *matrix)
     return ownReleaseReferenceInt((vx_reference*)matrix, VX_EXTERNAL);
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxQueryMatrix(vx_matrix mat, vx_enum attribute, void *ptr, vx_size size)
+VX_API_ENTRY vx_status VX_API_CALL vxQueryMatrix(vx_matrix matrix, vx_enum attribute, void *ptr, vx_size size)
 {
-    return 0;
+    if (!ownIsValidReference((vx_reference)matrix))
+    {
+        VX_PRINT(VX_DEBUG_WRN, "matrix is a null pointer");
+        return VX_ERROR_INVALID_REFERENCE;
+    }
+
+    return VX_SUCCESS;
 }
 
 VX_API_ENTRY vx_status VX_API_CALL vxCopyMatrix(vx_matrix matrix, void *user_ptr, vx_enum usage, vx_enum user_mem_type)
 {
-    return 0;
+    if (!ownIsValidReference((vx_reference)matrix))
+    {
+        VX_PRINT(VX_DEBUG_WRN, "matrix is a null pointer");
+        return VX_ERROR_INVALID_REFERENCE;
+    }
+
+    return VX_SUCCESS;
 }
 
 VX_API_ENTRY vx_matrix VX_API_CALL vxCreateMatrixFromPattern(vx_context context, vx_enum pattern, vx_size columns, vx_size rows)
@@ -130,12 +146,62 @@ VX_API_ENTRY vx_matrix VX_API_CALL vxCreateMatrixFromPattern(vx_context context,
 /////////////////////////////////////////////////////////////////////////
 // VX/vx_compatibility.h
 /////////////////////////////////////////////////////////////////////////
-VX_API_ENTRY vx_status VX_API_CALL vxReadMatrix(vx_matrix mat, void *array)
+VX_API_ENTRY vx_status VX_API_CALL vxReadMatrix(vx_matrix matrix, void *array)
 {
-    return 0;
+    if (!ownIsValidReference((vx_reference)matrix))
+    {
+        VX_PRINT(VX_DEBUG_WRN, "matrix is a null pointer");
+        return VX_ERROR_INVALID_REFERENCE;
+    }
+
+    if (!array)
+    {
+        VX_PRINT(VX_DEBUG_WRN, "array is a null pointer");
+        return VX_ERROR_INVALID_PARAMETERS;
+    }
+
+    ownSemWait(&((vx_reference)matrix)->lock);
+
+    if (!ownAllocMemory(&matrix->memory))
+    {
+        VX_PRINT(VX_DEBUG_WRN, "out of memory");
+        ownSemPost(&((vx_reference)matrix)->lock);
+        return VX_ERROR_NO_MEMORY;
+    }
+   
+    memcpy(array, matrix->memory.buffer, matrix->memory.size);
+
+    ownSemPost(&((vx_reference)matrix)->lock);
+
+    return VX_SUCCESS;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxWriteMatrix(vx_matrix mat, const void *array)
+VX_API_ENTRY vx_status VX_API_CALL vxWriteMatrix(vx_matrix matrix, const void *array)
 {
-    return 0;
+    if (!ownIsValidReference((vx_reference)matrix))
+    {
+        VX_PRINT(VX_DEBUG_WRN, "matrix is a null pointer");
+        return VX_ERROR_INVALID_REFERENCE;
+    }
+
+    if (!array)
+    {
+        VX_PRINT(VX_DEBUG_WRN, "array is a null pointer");
+        return VX_ERROR_INVALID_PARAMETERS;
+    }
+
+    ownSemWait(&((vx_reference)matrix)->lock);
+
+    if (!ownAllocMemory(&matrix->memory))
+    {
+        VX_PRINT(VX_DEBUG_WRN, "out of memory");
+        ownSemPost(&((vx_reference)matrix)->lock);
+        return VX_ERROR_NO_MEMORY;
+    }
+   
+    memcpy(matrix->memory.buffer, array, matrix->memory.size);
+
+    ownSemPost(&((vx_reference)matrix)->lock);
+
+    return VX_SUCCESS;
 }

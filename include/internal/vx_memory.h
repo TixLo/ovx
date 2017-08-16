@@ -31,15 +31,15 @@ extern "C"{
 
 /*! \brief Allocates a memory block.
  */
-void *ownMemMalloc(size_t size);
+void *ownMalloc(size_t size);
 
 /*! \brief Allocates a memory block and clean it
  */
-void *ownMemCalloc(size_t nmemb, size_t size);
+void *ownCalloc(size_t nmemb, size_t size);
 
 /*! \brief Free allocaed memory block 
  */
-void ownMemFree(void *ptr);
+void ownFree(void *ptr);
 
 /*! \brief Analysis of memory usage
  */
@@ -49,9 +49,9 @@ void ownMemAnalysis(void);
  */
 vx_uint32 ownMemCurrUsage(void);
 
-#define VX_MEM_CALLOC   ownMemCalloc 
-#define VX_MEM_MALLOC   ownMemMalloc
-#define VX_MEM_FREE     ownMemFree
+#define VX_MEM_CALLOC   ownCalloc 
+#define VX_MEM_MALLOC   ownMalloc
+#define VX_MEM_FREE     ownFree
 
 #else//HAVE_MEM_ANALYSIS
 
@@ -60,6 +60,14 @@ vx_uint32 ownMemCurrUsage(void);
 #define VX_MEM_MALLOC   malloc
 
 #endif//HAVE_MEM_ANALYSIS
+
+/*! \brief Allocate vx_memory_t
+ */
+vx_bool ownAllocMemory(vx_memory_t *memory);
+
+/*! \brief Free vx_memory_t
+ */
+vx_bool ownFreeMemory(vx_memory_t *memory);
 
 #ifdef __cplusplus
 }

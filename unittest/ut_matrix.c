@@ -21,6 +21,7 @@
  * SOFTWARE.
  */
 #include <VX/vx.h>
+#include <vx_internal.h>
 
 int test_vxmatrix_create(void)
 {
@@ -31,9 +32,63 @@ int test_vxmatrix_create(void)
 
     vx_matrix matrix = vxCreateMatrix(context, VX_TYPE_INT8, 2, 2);
 
-    ownPrintContext(context);
-    
+    if (!matrix)
+    {
+        vxReleaseContext(&context);
+        return 0;
+    }
+
     vxReleaseMatrix(&matrix);
     vxReleaseContext(&context);
     return 1;
+}
+
+int test_vxmatrix_readwrite(void)
+{
+    int i=0, j=0, ret=1;
+    vx_int32 buf[2][4] = {{1, 2, 3, 4}, {5, 6, 7, 8}};
+    vx_int32 out[2][4];
+    vx_status status = VX_SUCCESS;
+    vx_context context = vxCreateContext();
+    if (context == NULL)
+        return 0;
+
+    vx_matrix matrix = vxCreateMatrix(context, VX_TYPE_INT32, 2, 4);
+
+    if (!matrix)
+    {
+        vxReleaseContext(&context);
+        return 0;
+    }
+    
+    if (vxWriteMatrix(matrix, (void*)buf) != VX_SUCCESS)
+    {
+        vxReleaseMatrix(&matrix);
+        vxReleaseContext(&context);
+        return 0;
+    }
+
+    if (vxReadMatrix(matrix, (void*)out) != VX_SUCCESS)
+    {
+        vxReleaseMatrix(&matrix);
+        vxReleaseContext(&context);
+        return 0;
+    }
+
+    for (i=0 ; i<2 ; i++)
+    {
+        for (j=0 ; j<4 ; j++)
+        {
+            //VX_PRINT(VX_DEBUG_INFO, "[%d][%d], buf:%d, out:%d", i, j, buf[i][j], out[i][j]);
+            if (buf[i][j] != out[i][j])
+            {
+                ret = 0;
+                break;
+            }
+        }
+    }
+
+    vxReleaseMatrix(&matrix);
+    vxReleaseContext(&context);
+    return ret;
 }

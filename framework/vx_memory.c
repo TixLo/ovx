@@ -64,7 +64,7 @@ static vx_uint32 curr_mem_usage = 0;
 /////////////////////////////////////////////////////////////////////////
 // vx_memory.h
 /////////////////////////////////////////////////////////////////////////
-void *ownMemMalloc(size_t size)
+void *ownMalloc(size_t size)
 {
     // alloc requested memory and alloc extra memory for analysis
     void *ptr = malloc(size + sizeof(struct vx_mem_block_t));
@@ -104,12 +104,12 @@ void *ownMemMalloc(size_t size)
     return ptr;
 }
 
-void *ownMemCalloc(size_t nmemb, size_t size)
+void *ownCalloc(size_t nmemb, size_t size)
 {
-    return ownMemMalloc(nmemb * size);
+    return ownMalloc(nmemb * size);
 }
 
-void ownMemFree(void *ptr)
+void ownFree(void *ptr)
 {
     if (!ptr)
         return;
@@ -180,3 +180,41 @@ void ownMemAnalysis()
     VX_PRINT(VX_DEBUG_MEM, "Maximum memory usage : %d bytes", max_mem_usage);
 }
 
+vx_bool ownAllocMemory(vx_memory_t *memory)
+{
+    if (!memory)
+    {
+        VX_PRINT(VX_DEBUG_WRN, "array is a null pointer");
+        return vx_false_e;
+    }
+
+    if (!memory->buffer)
+    {
+        memory->allocated_buffer = (vx_uint8*)VX_MEM_MALLOC(memory->size);
+        if (!memory->allocated_buffer)
+        {
+            VX_PRINT(VX_DEBUG_WRN, "out of memory");
+            return vx_false_e;
+        }
+        memory->buffer = memory->allocated_buffer;
+    }
+
+    return vx_true_e;
+}
+
+vx_bool ownFreeMemory(vx_memory_t *memory)
+{
+    if (!memory)
+    {
+        VX_PRINT(VX_DEBUG_WRN, "array is a null pointer");
+        return vx_false_e;
+    }
+
+    if (memory->buffer)
+    {
+	VX_MEM_FREE((void*)memory->allocated_buffer);
+        memory = NULL;
+    }
+
+    return vx_true_e;
+}
